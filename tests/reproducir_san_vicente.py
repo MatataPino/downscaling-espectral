@@ -12,11 +12,10 @@ empleo en la memoria.
                                                    de escala: misma densidad espectral
   Paso 6 (RBF y reconstruccion)                    a la precision reportada
 
-Por que el paso 6 no se compara bit a bit: los espectros de SWAN en N4 con que
-se entreno la reconstruccion de la memoria se sobrescribieron en una
-propagacion posterior de los mismos casos, y SWAN no reproduce sus salidas bit a
-bit entre corridas (diferencias de milimetros en Hs). Se exige entonces que
-coincidan las cifras publicadas, a la precision con que se publican.
+Por que el paso 6 no se compara bit a bit: SWAN no reproduce sus salidas bit a
+bit entre corridas, de modo que los espectros en N4 sobre los que se entrena
+difieren en milimetros de Hs respecto de los de la memoria. Se exige entonces
+que coincidan las cifras publicadas, a la precision con que se publican.
 
 Uso:
     python tests/reproducir_san_vicente.py            # todos los pasos (~12 min)

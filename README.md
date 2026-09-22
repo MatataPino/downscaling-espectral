@@ -120,29 +120,21 @@ archivo empleado en la memoria.
 
 ### Notas de reproducibilidad
 
-**Paso 6.** Los espectros de SWAN con que se entrenó la reconstrucción de la
-memoria se sobrescribieron en una propagación posterior de los mismos casos, y
-SWAN no reproduce sus salidas bit a bit entre corridas. La diferencia es de
-milímetros en $H_s$ —0,5 mm en mediana, 8,6 mm como máximo sobre las 407.592
-horas— y no altera ninguna cifra publicada salvo el RMSE del período de pico
-en la verificación, que pasa de 2,401 a 2,402 s.
+**Paso 6.** SWAN no reproduce sus salidas bit a bit entre corridas, de modo que
+la reconstrucción se entrena sobre espectros que difieren en milímetros de los
+que se usaron en la memoria: 0,5 mm en $H_s$ como mediana sobre las 407.592
+horas y 8,6 mm como máximo. No altera ninguna cifra publicada salvo el RMSE del
+período de pico en la verificación, que pasa de 2,401 a 2,402 s.
 
-**Contornos de K-medias.** Se escribieron con una versión del generador que no
-se conserva y que ajustaba el factor de escala del archivo caso a caso: 11 de
-los 100 usan `FACTOR` = 10⁻² en vez de 10⁻¹. El formato `.sp2` guarda enteros
-escalados por ese factor, de modo que la densidad espectral que lee SWAN es la
-misma; la diferencia queda en el redondeo del último dígito impreso (relativa,
-menor que 10⁻⁴).
+**Contornos de K-medias.** El generador con que se escribieron ajustaba el
+factor de escala caso a caso: 11 de los 100 usan `FACTOR` = 10⁻² en vez de
+10⁻¹. El formato `.sp2` guarda enteros escalados por ese factor, de modo que la
+densidad espectral que lee SWAN es la misma; la diferencia queda en el redondeo
+del último dígito impreso (relativa, menor que 10⁻⁴).
 
-**Estados de verificación.** El sorteo original de los 60 estados no quedó
-registrado; se fijan como lista en `config/san_vicente_verificacion.txt`. Para
-otro sitio, si se omite la lista, el paso 3 los sortea con la semilla de la
-configuración.
-
-**Número de componentes.** La versión del programa que produjo los resultados
-fijaba $d = 30$; una versión posterior elegía $d$ por el umbral del 99 % de
-varianza, que habría dado unos 161 componentes y otra selección de casos. La
-carpeta `memoria/` contiene la versión correcta, verificada bit a bit.
+**Estados de verificación.** Los 60 estados de verificación se fijan como lista
+en `config/san_vicente_verificacion.txt`. Para otro sitio, si se omite la
+lista, el paso 3 los sortea con la semilla de la configuración.
 
 ## Verificación de la implementación
 

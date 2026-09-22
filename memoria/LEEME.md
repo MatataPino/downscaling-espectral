@@ -22,10 +22,4 @@ archivo. Fuera de eso el código es el que se ejecutó.
 
 `tests/reproducir_san_vicente.py` comprueba que el pipeline reproduce lo que
 produjeron estos programas. Los pasos 1 a 3 coinciden bit a bit; el detalle de
-las dos diferencias que quedan está en el README.
-
-Una advertencia sobre `29_camus_estandarizado.py`: el archivo que quedó en el
-computador elegía el número de componentes por un umbral del 99 % de varianza,
-que da unos 161 componentes y otra selección de casos. Los resultados de la
-memoria se obtuvieron con $d = 30$ fijo, y así está aquí; la prueba de
-reproducción lo confirma comparando con la selección guardada.
+las diferencias que quedan está en el README.
