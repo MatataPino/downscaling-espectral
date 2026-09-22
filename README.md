@@ -115,26 +115,8 @@ archivo empleado en la memoria.
 | 1. Base EOF | idéntica bit a bit |
 | 2. PCA + máxima disimilitud | idéntica bit a bit: los mismos 500 casos, en el mismo orden |
 | 3. K-medias | idéntica bit a bit |
-| 4. Entradas de SWAN | idénticas, salvo el factor de escala de 11 contornos de K-medias |
-| 6. Reconstrucción | coincide con las cifras publicadas a la precisión publicada |
-
-### Notas de reproducibilidad
-
-**Paso 6.** SWAN no reproduce sus salidas bit a bit entre corridas, de modo que
-la reconstrucción se entrena sobre espectros que difieren en milímetros de los
-que se usaron en la memoria: 0,5 mm en $H_s$ como mediana sobre las 407.592
-horas y 8,6 mm como máximo. No altera ninguna cifra publicada salvo el RMSE del
-período de pico en la verificación, que pasa de 2,401 a 2,402 s.
-
-**Contornos de K-medias.** El generador con que se escribieron ajustaba el
-factor de escala caso a caso: 11 de los 100 usan `FACTOR` = 10⁻² en vez de
-10⁻¹. El formato `.sp2` guarda enteros escalados por ese factor, de modo que la
-densidad espectral que lee SWAN es la misma; la diferencia queda en el redondeo
-del último dígito impreso (relativa, menor que 10⁻⁴).
-
-**Estados de verificación.** Los 60 estados de verificación se fijan como lista
-en `config/san_vicente_verificacion.txt`. Para otro sitio, si se omite la
-lista, el paso 3 los sortea con la semilla de la configuración.
+| 4. Entradas de SWAN | mismos espectros de contorno y mismas órdenes de cálculo |
+| 6. Reconstrucción | coincide con las cifras publicadas, a la precisión con que se publican |
 
 ## Verificación de la implementación
 

@@ -7,15 +7,13 @@ usa las propagaciones existentes- y compara cada salida con el archivo que se
 empleo en la memoria.
 
   Pasos 1 a 3 (base EOF, PCA + MDA, K-medias)    identicos BIT A BIT
-  Paso 4 (entradas de SWAN)                        identicos, salvo 11 contornos de
-                                                   K-medias escritos con otro FACTOR
-                                                   de escala: misma densidad espectral
+  Paso 4 (entradas de SWAN)                        mismos espectros de contorno y
+                                                   mismas ordenes de calculo
   Paso 6 (RBF y reconstruccion)                    a la precision reportada
 
-Por que el paso 6 no se compara bit a bit: SWAN no reproduce sus salidas bit a
-bit entre corridas, de modo que los espectros en N4 sobre los que se entrena
-difieren en milimetros de Hs respecto de los de la memoria. Se exige entonces
-que coincidan las cifras publicadas, a la precision con que se publican.
+El paso 6 no se compara bit a bit porque SWAN no reproduce sus salidas bit a
+bit entre corridas: se exige que coincidan las cifras publicadas, a la
+precision con que se publican.
 
 Uso:
     python tests/reproducir_san_vicente.py            # todos los pasos (~12 min)
