@@ -1,29 +1,16 @@
 # Downscaling espectral híbrido de oleaje
 
-Metodología para transferir un registro largo de espectros direccionales de
-oleaje desde un nodo oceánico hasta un punto costero, propagando con SWAN solo
-una fracción de los estados de mar y reconstruyendo el resto por interpolación.
-
-Desarrollada en la memoria de título *[título de la memoria]*, Departamento de
-Ingeniería Civil, Universidad de Chile, y aplicada a la bahía de San Vicente:
-46,5 años de espectros horarios (407.592 estados) reconstruidos a partir de 659
-propagaciones, el 0,16 % del registro.
+Transfiere un registro largo de espectros direccionales desde un nodo oceánico
+hasta un punto costero propagando con SWAN solo una fracción de los estados de
+mar y reconstruyendo el resto por interpolación. Con unos cientos de
+propagaciones se obtiene el registro completo: décadas de espectros horarios en
+el punto de interés, por un tiempo de cálculo de horas en vez de meses.
 
 Sigue la metodología de Camus et al. (2011a, 2011b, 2013), con una diferencia:
 tanto la entrada como la salida del interpolador son **espectros direccionales
 completos**, no parámetros integrados. Los parámetros de estado de mar se
 obtienen integrando el espectro reconstruido, de modo que espectro y parámetros
 describen el mismo estado de mar.
-
-## Estructura
-
-```
-config/          un archivo por sitio: todo lo específico del lugar
-downscaling/     el paquete: lectura, PCA, selección, SWAN, RBF, reconstrucción
-pasos/           los seis pasos del pipeline, en orden
-tests/           prueba de que el pipeline reproduce la memoria
-memoria/         los programas tal como se ejecutaron en la memoria
-```
 
 ## El método en seis pasos
 
@@ -34,12 +21,27 @@ memoria/         los programas tal como se ejecutaron en la memoria
 | 3 | `p3_kmedias.py` | K-medias sobre el clima operacional; estados de verificación | `seleccion_kmedias.npz`, `verificacion.npy` |
 | 4 | `p4_generar_swan.py` | espectros de contorno y archivos de entrada de SWAN | carpetas de casos |
 | 5 | `p5_correr_swan.py` | propagación estacionaria, en paralelo y reanudable | espectros en el punto |
-| 6 | `p6_reconstruccion.py` | 64 interpoladores RBF y reconstrucción del registro | `reconstruccion_<punto>.npz` |
+| 6 | `p6_reconstruccion.py` | interpoladores RBF y reconstrucción del registro | `reconstruccion_<punto>.npz` |
 
-La máxima disimilitud cubre la frontera del espacio de estados —ningún
-temporal queda fuera del alcance del interpolador— y K-medias cubre la
-densidad del régimen frecuente, que la primera ignora por construcción. Es la
+La máxima disimilitud cubre la frontera del espacio de estados —ningún temporal
+queda fuera del alcance del interpolador— y K-medias cubre la densidad del
+régimen frecuente, que la primera ignora por construcción. Es la
 complementariedad que establecen Camus et al. (2011a).
+
+La interpolación sigue la formulación de Camus et al. (2011b): núcleo
+gaussiano, base monomial de grado 1, ajuste exacto y parámetro de forma elegido
+por validación cruzada de Rippa (1999). Se ajusta un interpolador por cada
+parámetro de estado de mar y uno por cada modo de la base de salida, todos
+sobre las mismas componentes principales de entrada, de modo que comparten la
+factorización del sistema: ajustarlos cuesta segundos.
+
+## Estructura
+
+```
+config/          un archivo por sitio: todo lo específico del lugar
+downscaling/     el paquete: lectura, PCA, selección, SWAN, RBF, reconstrucción
+pasos/           los seis pasos del pipeline, en orden
+```
 
 ## Instalación
 
@@ -51,33 +53,34 @@ pip install -r requirements.txt
 
 ## Uso
 
-Definir dónde están los datos y el ejecutable de SWAN:
+Copiar `config/ejemplo.toml`, ajustar sus valores al sitio, y ejecutar los
+pasos en orden desde la raíz del repositorio:
 
 ```
-set MEMORIA=C:\ruta\a\los\datos
+python pasos/p1_base_eof.py --config config/mi_sitio.toml
+python pasos/p2_pca_mda.py --config config/mi_sitio.toml
+python pasos/p3_kmedias.py --config config/mi_sitio.toml
+python pasos/p4_generar_swan.py --config config/mi_sitio.toml
+python pasos/p5_correr_swan.py --config config/mi_sitio.toml
+python pasos/p6_reconstruccion.py --config config/mi_sitio.toml
+```
+
+El paso 5 es el largo —es SWAN— y es reanudable: si se interrumpe, basta con
+relanzarlo. Los demás son minutos.
+
+Las rutas de la configuración admiten variables de entorno, de modo que el
+archivo no queda atado a un computador:
+
+```
+set DATOS=C:\ruta\a\los\datos
 set SWAN_EXE=C:\ruta\a\swan.exe
 ```
 
-y ejecutar los pasos en orden desde la raíz del repositorio:
-
-```
-python pasos/p1_base_eof.py
-python pasos/p2_pca_mda.py
-python pasos/p3_kmedias.py
-python pasos/p4_generar_swan.py
-python pasos/p5_correr_swan.py
-python pasos/p6_reconstruccion.py
-```
-
-Todos aceptan `--config` para usar otro sitio; por defecto emplean
-`config/san_vicente.toml`.
-
-## Aplicarlo a otro sitio
-
-Copiar `config/san_vicente.toml` y cambiar sus valores:
+## Configuración
 
 | Sección | Qué contiene |
 |---|---|
+| `[rutas]` | dónde están los datos y dónde se escriben los resultados |
 | `[nodo]` | archivo del registro espectral y coordenadas del nodo |
 | `[pca]` | número de componentes $d$ |
 | `[seleccion]` | casos de máxima disimilitud y K-medias, umbral del clima operacional |
@@ -92,49 +95,38 @@ elige el menor que alcance un error aceptable en $H_s$, período y dirección.
 
 **Los modos de la base de salida.** Con pocos modos el período de pico se
 degrada mucho antes que la altura, porque depende de la posición del máximo
-espectral y esa información vive en los modos de orden alto. En San Vicente,
-21 modos —el 99,8 % de la varianza— daban 14,6 s de error en el período; con
-60 baja a 0,19 s.
+espectral y esa información vive en los modos de orden alto. En una aplicación
+a una bahía abierta del Pacífico sur, 21 modos —el 99,8 % de la varianza— daban
+14,6 s de error en el período; con 60 baja a 0,19 s.
+
+El paso 3 aparta además un conjunto de estados ajenos al entrenamiento, que se
+propagan con los demás, y el paso 6 informa el error del interpolador sobre
+ellos. Es la forma de comprobar que las dos decisiones anteriores son
+adecuadas para el sitio.
+
+## Formato de los datos
 
 El registro del nodo debe ser un archivo HDF5 (`.mat` v7.3) con un grupo que
 contenga `Spec` (Nt × Ndir × Nf, en m²/Hz/rad), `frec`, `dir` y `time`. Otro
 formato requiere adaptar `downscaling/espectros.py`.
 
-## Reproducción de la memoria
-
-```
-python tests/reproducir_san_vicente.py
-```
-
-Ejecuta los pasos 1 a 4 y 6 con la configuración de San Vicente —el paso 5 no
-se repite: el 6 usa las propagaciones existentes— y compara cada salida con el
-archivo empleado en la memoria.
-
-| Paso | Resultado |
-|---|---|
-| 1. Base EOF | idéntica bit a bit |
-| 2. PCA + máxima disimilitud | idéntica bit a bit: los mismos 500 casos, en el mismo orden |
-| 3. K-medias | idéntica bit a bit |
-| 4. Entradas de SWAN | mismos espectros de contorno y mismas órdenes de cálculo |
-| 6. Reconstrucción | coincide con las cifras publicadas, a la precisión con que se publican |
+La malla de SWAN es una malla no estructurada de TRIANGLE (`.node`, `.ele`), y
+los lados del contorno donde se impone el espectro del nodo se indican por sus
+marcadores.
 
 ## Verificación de la implementación
 
-El interpolador sigue la formulación de Camus et al. (2011b): núcleo gaussiano,
-base monomial de grado 1, ajuste exacto y parámetro de forma por validación
-cruzada de Rippa (1999). Se contrastó con la biblioteca BlueMath_tk
-(IH Cantabria) mediante `memoria/35_verificacion_bluemath.py`: la selección por
-máxima disimilitud coincide en los 500 casos y las predicciones difieren en
-menos de 10⁻¹¹ para un mismo parámetro de forma. Se usa una implementación
-propia porque comparte la factorización del sistema entre los 64
-interpoladores, lo que reduce el tiempo de ajuste de horas a segundos.
+El interpolador se contrastó con la biblioteca BlueMath_tk (IH Cantabria): la
+selección por máxima disimilitud coincide caso a caso y las predicciones
+difieren en menos de 10⁻¹¹ para un mismo parámetro de forma. Los resultados del
+método completo se contrastaron además con propagaciones directas con SWAN y
+con mediciones de un perfilador acústico (ADCP).
 
 ## Uso de inteligencia artificial
 
 El código de este repositorio se desarrolló con asistencia de una herramienta
-de inteligencia artificial generativa (Claude, Anthropic). Los resultados se
-verificaron contra la biblioteca BlueMath_tk, contra propagaciones directas con
-SWAN y contra mediciones de un perfilador acústico (ADCP).
+de inteligencia artificial generativa (Claude, Anthropic), y fue revisado y
+verificado por el autor.
 
 ## Referencias
 

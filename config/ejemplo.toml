@@ -1,25 +1,26 @@
 # =====================================================================
-#  Downscaling espectral -- Bahia de San Vicente
+#  Downscaling espectral -- configuracion de ejemplo
 #
-#  Todo lo especifico del sitio esta en este archivo. Para aplicar la
-#  metodologia a otro puerto, copielo y cambie los valores.
+#  Todo lo especifico del sitio esta en este archivo: para aplicar la
+#  metodologia a otro lugar se copia y se cambian los valores, sin tocar
+#  el codigo.
 #
-#  Las rutas admiten variables de entorno: ${MEMORIA}, %MEMORIA%.
+#  Las rutas admiten variables de entorno: ${DATOS}, %DATOS%.
 # =====================================================================
 
 [rutas]
 # Carpeta raiz de los datos de entrada (registro del nodo, malla de SWAN).
-datos  = "${MEMORIA}"
+datos  = "${DATOS}"
 # Carpeta donde el pipeline escribe sus resultados, relativa al repositorio.
-salida = "resultados/san_vicente"
+salida = "resultados/ejemplo"
 
 # ---------------------------------------------------------------------
 [nodo]
 # Registro horario de espectros direccionales del nodo oceanico.
 # HDF5 (.mat v7.3) con un grupo que contiene Spec (Nt, Ndir, Nf) en
 # m2/Hz/rad, frec (Hz), dir (grados nauticos) y time.
-archivo = "Actividad 1/NID_027.mat"
-grupo   = "NID_027"
+archivo = "nodo/NODO.mat"
+grupo   = "NODO"
 lon     = -76.498
 lat     = -37.000
 # Estados por bloque al recorrer el registro. Forma parte del resultado a
@@ -30,7 +31,7 @@ bloque  = 20000
 [pca]
 # Componentes de entrada. Criterio de Camus et al. (2013): igualar su error
 # de reconstruccion (0,1 m en Hs, 0,2 s en Tm, 2,5 grados), no un umbral de
-# varianza. Con 30 se obtiene 0,124 m, 0,282 s y 2,78 grados.
+# varianza. El paso 2 imprime ese error para los valores de tabla_d.
 d          = 30
 # Modos que guarda la base EOF centrada del nodo (la usa K-medias).
 modos_base = 40
@@ -39,6 +40,8 @@ tabla_d    = [10, 13, 16, 20, 30, 50, 80, 120]
 
 # ---------------------------------------------------------------------
 [seleccion]
+# Casos que se propagan con SWAN: la maxima disimilitud cubre la frontera
+# del espacio de estados y K-medias la densidad del regimen frecuente.
 mda_casos            = 500
 kmedias_casos        = 100
 kmedias_componentes  = 16
@@ -47,19 +50,18 @@ kmedias_hs_max       = 3.0
 kmedias_muestra      = 60000
 kmedias_k_codo       = [30, 50, 75, 100, 125, 150]
 semilla              = 0
+# Estados ajenos al entrenamiento que se propagan aparte para medir el error
+# del interpolador. Se sortean con la semilla; para fijarlos, apuntar
+# verificacion_indices a un archivo de texto con un indice por linea.
 verificacion_casos   = 60
-# Lista fija de los estados de verificacion empleados en la memoria. Si se
-# omite, se sortean con la semilla entre los estados operacionales que no
-# forman parte del entrenamiento.
-verificacion_indices = "config/san_vicente_verificacion.txt"
 
 # ---------------------------------------------------------------------
 [swan]
 ejecutable     = "${SWAN_EXE}"
 # Directorio de trabajo de SWAN: contiene la malla y las carpetas de casos.
-raiz           = "Actividad 2/SWAN"
-malla          = "Importante/svicente_mesh"
-proyecto       = "PSV-CAM"
+raiz           = "swan"
+malla          = "malla/mi_malla"
+proyecto       = "DOWN"
 preambulo      = """
 MODE STATIONARY
 COORDINATES SPHERICAL
@@ -70,7 +72,7 @@ SET MAXERR 3
 cgrid          = "CIRCLE 36 0.03 1.0 32"
 excmark        = 5
 # Lados de la malla donde se impone el espectro del nodo (marcadores del
-# contorno en el .node de TRIANGLE): 2 oeste, 3 sur, 4 norte.
+# contorno en el .node de TRIANGLE).
 lados_contorno = [2, 3, 4]
 factor_sp2     = 0.1
 fisica         = """
@@ -91,17 +93,19 @@ verificacion = "casos_verificacion"
 
 # Puntos en que SWAN escribe espectro. El primero decide si un caso esta hecho.
 [[swan.puntos]]
-nombre      = "N4"
+nombre      = "P1"
 lon         = -73.16406
 lat         = -36.73878
-utm_e       = 663920.0
-utm_n       = 5932534.0
 profundidad = 21.9
 
 # ---------------------------------------------------------------------
 [rbf]
-punto          = "N4"
+# Punto que se reconstruye: uno de los [[swan.puntos]].
+punto          = "P1"
+# Modos de la base de salida. Con pocos modos el periodo de pico se degrada
+# mucho antes que la altura; conviene revisarlo contra la verificacion.
 modos_salida   = 60
+# Malla logaritmica del parametro de forma que recorre el criterio de Rippa.
 sigma_min      = 0.002
 sigma_max      = 3.0
 n_sigma        = 60

@@ -8,8 +8,8 @@ from downscaling import config as C   # noqa: E402
 
 def iniciar(descripcion):
     ap = argparse.ArgumentParser(description=descripcion)
-    ap.add_argument('--config', default='config/san_vicente.toml',
-                    help='archivo de configuracion del sitio (por defecto San Vicente)')
+    ap.add_argument('--config', default='config/ejemplo.toml',
+                    help='archivo de configuracion del sitio')
     a = ap.parse_args()
     ruta = Path(a.config)
     if not ruta.is_absolute():

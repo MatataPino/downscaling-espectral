@@ -3,5 +3,3 @@ scipy==1.17.0
 h5py==3.16.0
 pandas==2.3.3
 matplotlib==3.10.8
-# solo para 35_verificacion_bluemath.py:
-bluemath-tk
