@@ -15,9 +15,8 @@
 import time
 import numpy as np
 from . import config as C
-from .espectros import leer_spc, leer_tab, dir_pico, abrir_nodo
+from .espectros import leer_spc, leer_tab, dir_pico, abrir_nodo, nombre_salida
 from .rbf import malla_sigma, rippa, resolver
-from .swan import nombre_salida
 
 REDONDEO_SIGMA = 6        # decimales con que se agrupan los objetivos por sigma
 

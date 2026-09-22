@@ -56,42 +56,22 @@ semilla              = 0
 verificacion_casos   = 60
 
 # ---------------------------------------------------------------------
+# Donde quedaron los espectros que SWAN propago para los estados
+# seleccionados. La propagacion es externa a este repositorio.
 [swan]
-ejecutable     = "${SWAN_EXE}"
-# Directorio de trabajo de SWAN: contiene la malla y las carpetas de casos.
-raiz           = "swan"
-malla          = "malla/mi_malla"
-proyecto       = "DOWN"
-preambulo      = """
-MODE STATIONARY
-COORDINATES SPHERICAL
-SET NAUTICAL
-SET DEPMIN 0.05
-SET MAXERR 3
-"""
-cgrid          = "CIRCLE 36 0.03 1.0 32"
-excmark        = 5
-# Lados de la malla donde se impone el espectro del nodo (marcadores del
-# contorno en el .node de TRIANGLE).
-lados_contorno = [2, 3, 4]
-factor_sp2     = 0.1
-fisica         = """
-GEN3 KOMEN
-OFF QUAD
-BREAKING
-FRICTION JONSWAP 0.038
-PROP BSBT
-NUMERIC STOPC 0.02 0.02 0.02 98. STAT 50
-"""
-procesos       = 8
-timeout_s      = 1800
+# Directorio de trabajo de SWAN: contiene las carpetas de casos.
+raiz = "swan"
 
+# Carpeta de cada conjunto, relativa a la raiz. En cada una se esperan, por
+# cada caso k, los archivos <punto>_<kkk>.spc y <punto>_<kkk>.tab que escriben
+# las ordenes SPECOUT y TABLE de SWAN, numerados en el orden en que el paso 2
+# y el paso 3 seleccionaron los estados.
 [swan.carpetas]
 mda          = "casos_mda"
 kmedias      = "casos_kmedias"
 verificacion = "casos_verificacion"
 
-# Puntos en que SWAN escribe espectro. El primero decide si un caso esta hecho.
+# Puntos en que SWAN escribio espectro.
 [[swan.puntos]]
 nombre      = "P1"
 lon         = -73.16406

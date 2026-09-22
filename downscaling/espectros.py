@@ -18,6 +18,11 @@ def abrir_nodo(cfg):
     return f, f[cfg['nodo']['grupo']]
 
 
+def nombre_salida(punto, k):
+    """Nombre, sin extension, con que se esperan las salidas de SWAN del caso k."""
+    return "%s_%03d" % (punto.lower(), k)
+
+
 def leer_spc(p):
     """Espectro 2D de un fichero .spc de SWAN -> (frec, dir, espectros)."""
     L = open(p, encoding='latin-1').read().splitlines(); i = 0

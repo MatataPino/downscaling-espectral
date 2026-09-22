@@ -12,16 +12,19 @@ completos**, no parámetros integrados. Los parámetros de estado de mar se
 obtienen integrando el espectro reconstruido, de modo que espectro y parámetros
 describen el mismo estado de mar.
 
-## El método en seis pasos
+## El método
 
 | Paso | Programa | Qué hace | Escribe |
 |---|---|---|---|
 | 1 | `p1_base_eof.py` | base EOF de los espectros centrados del nodo | `base_eof_nodo.npz` |
 | 2 | `p2_pca_mda.py` | PCA de los espectros estandarizados; selección por máxima disimilitud | `seleccion_mda.npz` |
 | 3 | `p3_kmedias.py` | K-medias sobre el clima operacional; estados de verificación | `seleccion_kmedias.npz`, `verificacion.npy` |
-| 4 | `p4_generar_swan.py` | espectros de contorno y archivos de entrada de SWAN | carpetas de casos |
-| 5 | `p5_correr_swan.py` | propagación estacionaria, en paralelo y reanudable | espectros en el punto |
-| 6 | `p6_reconstruccion.py` | interpoladores RBF y reconstrucción del registro | `reconstruccion_<punto>.npz` |
+| — | | *propagación de los estados seleccionados con SWAN* | |
+| 4 | `p4_reconstruccion.py` | interpoladores RBF y reconstrucción del registro | `reconstruccion_<punto>.npz` |
+
+La propagación queda fuera del repositorio: cada aplicación tiene su malla, su
+física y su forma de correr SWAN. Los pasos 1 a 3 dicen qué estados propagar y
+el paso 4 toma lo que SWAN devolvió.
 
 La máxima disimilitud cubre la frontera del espacio de estados —ningún temporal
 queda fuera del alcance del interpolador— y K-medias cubre la densidad del
@@ -39,8 +42,8 @@ factorización del sistema: ajustarlos cuesta segundos.
 
 ```
 config/          un archivo por sitio: todo lo específico del lugar
-downscaling/     el paquete: lectura, PCA, selección, SWAN, RBF, reconstrucción
-pasos/           los seis pasos del pipeline, en orden
+downscaling/     el paquete: lectura, PCA, selección, RBF, reconstrucción
+pasos/           los pasos del pipeline, en orden
 ```
 
 ## Instalación
@@ -60,21 +63,42 @@ pasos en orden desde la raíz del repositorio:
 python pasos/p1_base_eof.py --config config/mi_sitio.toml
 python pasos/p2_pca_mda.py --config config/mi_sitio.toml
 python pasos/p3_kmedias.py --config config/mi_sitio.toml
-python pasos/p4_generar_swan.py --config config/mi_sitio.toml
-python pasos/p5_correr_swan.py --config config/mi_sitio.toml
-python pasos/p6_reconstruccion.py --config config/mi_sitio.toml
 ```
 
-El paso 5 es el largo —es SWAN— y es reanudable: si se interrumpe, basta con
-relanzarlo. Los demás son minutos.
+Propagar entonces los estados seleccionados con SWAN (ver más abajo), y
+reconstruir el registro:
+
+```
+python pasos/p4_reconstruccion.py --config config/mi_sitio.toml
+```
 
 Las rutas de la configuración admiten variables de entorno, de modo que el
 archivo no queda atado a un computador:
 
 ```
 set DATOS=C:\ruta\a\los\datos
-set SWAN_EXE=C:\ruta\a\swan.exe
 ```
+
+## La propagación con SWAN
+
+Hay que propagar tres conjuntos: los casos de máxima disimilitud, los medoides
+de K-medias y los estados de verificación. Cada archivo de selección guarda en
+`sel` los índices de los estados dentro del registro del nodo, de modo que el
+espectro de contorno del caso `k` es `Spec[sel[k]]`, sin más transformación que
+pasarlo al formato `.sp2` que lee `BOUNDSPEC`.
+
+Cada caso se corre estacionario, imponiendo ese espectro en los contornos
+abiertos de la malla, y debe escribir en el punto de destino:
+
+```
+SPECOUT '<punto>' SPEC2D ABS '<punto>_<kkk>.spc'
+TABLE   '<punto>' HEAD     '<punto>_<kkk>.tab' HSIG TPS DIR
+```
+
+con el nombre del punto en minúsculas y `<kkk>` el número del caso, en el mismo
+orden en que aparece en `sel`. El paso 4 busca esos dos archivos en la carpeta
+que la configuración asigna a cada conjunto; los casos que falten no entran al
+entrenamiento.
 
 ## Configuración
 
@@ -84,7 +108,7 @@ set SWAN_EXE=C:\ruta\a\swan.exe
 | `[nodo]` | archivo del registro espectral y coordenadas del nodo |
 | `[pca]` | número de componentes $d$ |
 | `[seleccion]` | casos de máxima disimilitud y K-medias, umbral del clima operacional |
-| `[swan]` | ejecutable, malla, física, lados de contorno y **puntos de salida** |
+| `[swan]` | carpetas donde quedaron las salidas de SWAN y **puntos de salida** |
 | `[rbf]` | punto de destino, modos de la base de salida, malla de σ |
 
 Dos decisiones que dependen del sitio y conviene revisar:
@@ -100,7 +124,7 @@ a una bahía abierta del Pacífico sur, 21 modos —el 99,8 % de la varianza— 
 14,6 s de error en el período; con 60 baja a 0,19 s.
 
 El paso 3 aparta además un conjunto de estados ajenos al entrenamiento, que se
-propagan con los demás, y el paso 6 informa el error del interpolador sobre
+propagan con los demás, y el paso 4 informa el error del interpolador sobre
 ellos. Es la forma de comprobar que las dos decisiones anteriores son
 adecuadas para el sitio.
 
@@ -109,10 +133,6 @@ adecuadas para el sitio.
 El registro del nodo debe ser un archivo HDF5 (`.mat` v7.3) con un grupo que
 contenga `Spec` (Nt × Ndir × Nf, en m²/Hz/rad), `frec`, `dir` y `time`. Otro
 formato requiere adaptar `downscaling/espectros.py`.
-
-La malla de SWAN es una malla no estructurada de TRIANGLE (`.node`, `.ele`), y
-los lados del contorno donde se impone el espectro del nodo se indican por sus
-marcadores.
 
 ## Verificación de la implementación
 

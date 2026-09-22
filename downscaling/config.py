@@ -2,11 +2,11 @@
 """Lectura del archivo de configuracion del sitio.
 
 Toda la informacion especifica de un sitio vive en un archivo TOML de la carpeta
-config/: ubicacion de los datos, coordenadas del nodo, malla de SWAN, puntos de
-salida y parametros de la metodologia. Los programas no contienen ningun valor
+config/: ubicacion de los datos, coordenadas del nodo, carpetas y puntos de
+salida de SWAN y parametros de la metodologia. Los programas no contienen ningun valor
 propio del sitio.
 
-Las rutas admiten variables de entorno (${MEMORIA}, %MEMORIA%). Las relativas se
+Las rutas admiten variables de entorno (${DATOS}, %DATOS%). Las relativas se
 resuelven asi:
   - rutas.datos y rutas.salida, respecto de la raiz del repositorio;
   - el resto de rutas de datos, respecto de rutas.datos.
@@ -54,12 +54,8 @@ def salida(cfg, nombre=None):
 
 
 def raiz_swan(cfg):
-    """Directorio de trabajo de SWAN: contiene la malla y las carpetas de casos."""
+    """Directorio de trabajo de SWAN: contiene las carpetas de casos."""
     return datos(cfg, cfg['swan']['raiz'])
-
-
-def ejecutable_swan(cfg):
-    return Path(_expandir(cfg['swan']['ejecutable']))
 
 
 def carpeta_casos(cfg, conjunto):

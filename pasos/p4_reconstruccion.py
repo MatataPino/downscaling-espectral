@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Paso 6 -- Interpolacion RBF y reconstruccion del registro completo en el
-punto de destino. Escribe reconstruccion_<punto>.npz.
+"""Paso 4 -- Interpolacion RBF y reconstruccion del registro completo en el
+punto de destino, a partir de los espectros que SWAN propago para los estados
+seleccionados. Escribe reconstruccion_<punto>.npz.
 """
 import numpy as np
 from _comun import iniciar, C
@@ -11,7 +12,7 @@ R = dict(np.load(C.salida(cfg, 'seleccion_mda.npz')))
 B = dict(np.load(C.salida(cfg, 'base_eof_nodo.npz')))
 k = np.load(C.salida(cfg, 'seleccion_kmedias.npz'))['sel']
 ver = np.load(C.salida(cfg, 'verificacion.npy'))
-print('[6] interpolacion y reconstruccion')
+print('[4] interpolacion y reconstruccion')
 res, v = reconstruir(cfg, R['sel'], k, ver, R, B)
 if v:
     print('    verificacion (%d estados ajenos al entrenamiento)' % v['n'])
