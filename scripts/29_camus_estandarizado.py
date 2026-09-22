@@ -82,8 +82,15 @@ for d in (10,13,16,20,30,50,80,120):
     ed=np.sqrt((np.abs((d1-th0+180)%360-180)[op]**2).mean())
     print("      %4d %8.2f | %8.3f %9.3f %10.2f"%(d,vexp[d-1],e(h1,hs0),e(t1,tm0),ed))
 
-D_SEL=int(np.searchsorted(vexp,99.0)+1)
-print("[4] d adoptado = %d (99%% de varianza, mismo umbral que Camus)"%D_SEL)
+# d se fija por el criterio de Camus et al. (2013): igualar su error de
+# reconstruccion (0,1 m en Hs, 0,2 s en Tm, 2,5 grados en direccion), que es lo
+# que muestra la tabla anterior. El 99 % de varianza que Camus reporta es la
+# consecuencia de su eleccion, no el criterio; trasladarlo aqui exigiria ~161
+# componentes, porque comprimir 684 densidades espectrales no equivale a
+# comprimir 35 parametros.
+D_SEL=30
+print("[4] d adoptado = %d (criterio de error de reconstruccion, %.2f%% de varianza)"
+      %(D_SEL,vexp[D_SEL-1]))
 
 # --- pasada 2: componentes principales de todos los estados ----------------
 E_use=EOFs[:D_SEL]
@@ -120,9 +127,9 @@ resumen(sel[:150],"primeros 150 (comparable con la libreria vieja)")
 print("\n  clima completo: Hs %.2f-%.2f | Tp %.1f-%.1f"%(Hs.min(),Hs.max(),Tp.min(),Tp.max()))
 print("  operacional   : Hs %.2f-%.2f"%(Hs[Hs<3].min(),Hs[Hs<3].max()))
 
-np.savez_compressed(OUTD+"/camus_estandarizado.npz",
+np.savez_compressed(OUTD+"/camus_std_d30.npz",
     sel=sel,C=C[sel],Hs=Hs[sel],Tp=Tp[sel],Dp=Dp[sel],
     mu=mu,sd=sd,val=val,EOF=E_use,d=D_SEL,var_exp=vexp[:D_SEL],
     lo=lo,hi=hi,M=M_SEL,
     nota="PCA sobre espectros ESTANDARIZADOS (Camus 2013); MDA unico sobre toda la base")
-print("\n[7] guardado -> datos/camus_estandarizado.npz  (%.1f min)"%((time.time()-t0)/60))
+print("\n[7] guardado -> datos/camus_std_d30.npz  (%.1f min)"%((time.time()-t0)/60))

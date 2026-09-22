@@ -15,12 +15,19 @@ funciones de base radial. Sigue la metodología de Camus et al. (2011a, 2011b,
 
 | | Programa | Qué hace | Produce |
 |---|---|---|---|
+| 0 | `01_eof_nodo_completo.py` | base EOF del nodo sobre los espectros centrados; se ejecuta desde la carpeta que contiene `NID_027.mat` | `eof_nodo_completo.npz` |
 | 1 | `29_camus_estandarizado.py` | PCA sobre los 696 valores espectrales estandarizados; selección por máxima disimilitud | 500 casos |
 | 2 | `08_kmeans_seleccion.py` | K-medias sobre el clima operacional ($H_s$ < 3 m); medoides | 100 casos |
 | 3 | `30_generar_batch_camus.py` | espectros de contorno y archivos de entrada de SWAN | entradas |
 | 4 | `31_correr_batch_camus.py` | propagación estacionaria en paralelo | espectros en N4 |
 | 5 | `39_reconstruccion_MDA_KMA.py` | base EOF de salida, 64 interpoladores RBF, reconstrucción | 407.592 espectros |
 | — | `35_verificacion_bluemath.py` | contraste con la biblioteca BlueMath_tk | verificación |
+
+El número de componentes de entrada se fija en $d = 30$ siguiendo el criterio
+de Camus et al. (2013): igualar su error de reconstrucción, no un umbral de
+varianza. Con esa elección el programa 1 reproduce bit a bit el archivo
+`camus_std_d30.npz` empleado en la memoria, incluidos los 500 casos
+seleccionados y su orden.
 
 Los programas no se importan entre sí: se comunican a través de ficheros de
 datos intermedios (`.npz`), que no se incluyen en el repositorio.
@@ -30,7 +37,6 @@ datos intermedios (`.npz`), que no se incluyen en el repositorio.
 | Dato | Descripción |
 |---|---|
 | `Actividad 1/NID_027.mat` | espectros direccionales horarios del nodo oceánico, 29 frecuencias × 24 direcciones, 1979–2025 |
-| `Actividad 1/eof_nodo_completo.npz` | base EOF del nodo, empleada por la selección por K-medias |
 | `Actividad 2/SWAN/Importante/svicente_mesh.*` | malla no estructurada de SWAN (`.node`, `.ele`, `.bot`) |
 | `Programa SWAN/AP_San_Vicente.mat` | espectros del nodo en el periodo instrumental, agosto–septiembre 2025 |
 | registro del ADCP (`.csv`) | solo para el programa de verificación |
