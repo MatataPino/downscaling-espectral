@@ -1,0 +1,65 @@
+# Estados de verificacion empleados en la memoria: indices horarios del
+# registro del nodo (base 0). Sorteados al azar entre los estados del clima
+# operacional, ajenos al entrenamiento. El sorteo original no quedo
+# registrado, por eso se fijan aqui como lista. En el orden en que se
+# numeraron los casos (000 a 059).
+8696
+27506
+31606
+31641
+35280
+36828
+44906
+47509
+50224
+50615
+62060
+72364
+75369
+79259
+82460
+82627
+85535
+88279
+88921
+97169
+104847
+104882
+123062
+126890
+129613
+132301
+153267
+153417
+173938
+184116
+187126
+187322
+188118
+197825
+221136
+225052
+237176
+237353
+244117
+255816
+266626
+269361
+270819
+280151
+280738
+283801
+287981
+295892
+296416
+299784
+312928
+318341
+322527
+329501
+339259
+359126
+371091
+383643
+386366
+402751

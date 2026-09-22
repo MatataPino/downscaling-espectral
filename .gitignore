@@ -10,6 +10,7 @@
 *.node
 *.ele
 datos/
+resultados/
 figuras/
 casos_*/
 _w*/

@@ -1,0 +1,108 @@
+# =====================================================================
+#  Downscaling espectral -- Bahia de San Vicente
+#
+#  Todo lo especifico del sitio esta en este archivo. Para aplicar la
+#  metodologia a otro puerto, copielo y cambie los valores.
+#
+#  Las rutas admiten variables de entorno: ${MEMORIA}, %MEMORIA%.
+# =====================================================================
+
+[rutas]
+# Carpeta raiz de los datos de entrada (registro del nodo, malla de SWAN).
+datos  = "${MEMORIA}"
+# Carpeta donde el pipeline escribe sus resultados, relativa al repositorio.
+salida = "resultados/san_vicente"
+
+# ---------------------------------------------------------------------
+[nodo]
+# Registro horario de espectros direccionales del nodo oceanico.
+# HDF5 (.mat v7.3) con un grupo que contiene Spec (Nt, Ndir, Nf) en
+# m2/Hz/rad, frec (Hz), dir (grados nauticos) y time.
+archivo = "Actividad 1/NID_027.mat"
+grupo   = "NID_027"
+lon     = -76.498
+lat     = -37.000
+# Estados por bloque al recorrer el registro. Forma parte del resultado a
+# nivel de bit: cambiarlo altera el orden de las sumas.
+bloque  = 20000
+
+# ---------------------------------------------------------------------
+[pca]
+# Componentes de entrada. Criterio de Camus et al. (2013): igualar su error
+# de reconstruccion (0,1 m en Hs, 0,2 s en Tm, 2,5 grados), no un umbral de
+# varianza. Con 30 se obtiene 0,124 m, 0,282 s y 2,78 grados.
+d          = 30
+# Modos que guarda la base EOF centrada del nodo (la usa K-medias).
+modos_base = 40
+# Valores de d para los que se imprime el error de reconstruccion.
+tabla_d    = [10, 13, 16, 20, 30, 50, 80, 120]
+
+# ---------------------------------------------------------------------
+[seleccion]
+mda_casos            = 500
+kmedias_casos        = 100
+kmedias_componentes  = 16
+# Clima operacional: estados con Hs menor que este valor en el nodo [m].
+kmedias_hs_max       = 3.0
+kmedias_muestra      = 60000
+kmedias_k_codo       = [30, 50, 75, 100, 125, 150]
+semilla              = 0
+verificacion_casos   = 60
+# Lista fija de los estados de verificacion empleados en la memoria. Si se
+# omite, se sortean con la semilla entre los estados operacionales que no
+# forman parte del entrenamiento.
+verificacion_indices = "config/san_vicente_verificacion.txt"
+
+# ---------------------------------------------------------------------
+[swan]
+ejecutable     = "${SWAN_EXE}"
+# Directorio de trabajo de SWAN: contiene la malla y las carpetas de casos.
+raiz           = "Actividad 2/SWAN"
+malla          = "Importante/svicente_mesh"
+proyecto       = "PSV-CAM"
+preambulo      = """
+MODE STATIONARY
+COORDINATES SPHERICAL
+SET NAUTICAL
+SET DEPMIN 0.05
+SET MAXERR 3
+"""
+cgrid          = "CIRCLE 36 0.03 1.0 32"
+excmark        = 5
+# Lados de la malla donde se impone el espectro del nodo (marcadores del
+# contorno en el .node de TRIANGLE): 2 oeste, 3 sur, 4 norte.
+lados_contorno = [2, 3, 4]
+factor_sp2     = 0.1
+fisica         = """
+GEN3 KOMEN
+OFF QUAD
+BREAKING
+FRICTION JONSWAP 0.038
+PROP BSBT
+NUMERIC STOPC 0.02 0.02 0.02 98. STAT 50
+"""
+procesos       = 8
+timeout_s      = 1800
+
+[swan.carpetas]
+mda          = "casos_mda"
+kmedias      = "casos_kmedias"
+verificacion = "casos_verificacion"
+
+# Puntos en que SWAN escribe espectro. El primero decide si un caso esta hecho.
+[[swan.puntos]]
+nombre      = "N4"
+lon         = -73.16406
+lat         = -36.73878
+utm_e       = 663920.0
+utm_n       = 5932534.0
+profundidad = 21.9
+
+# ---------------------------------------------------------------------
+[rbf]
+punto          = "N4"
+modos_salida   = 60
+sigma_min      = 0.002
+sigma_max      = 3.0
+n_sigma        = 60
+hs_operacional = 3.0
