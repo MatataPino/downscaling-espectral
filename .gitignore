@@ -1,0 +1,18 @@
+# datos y resultados: no se versionan
+*.mat
+*.npz
+*.npy
+*.spc
+*.sp2
+*.tab
+*.csv
+*.bot
+*.node
+*.ele
+datos/
+figuras/
+casos_*/
+_w*/
+# python
+__pycache__/
+*.pyc
