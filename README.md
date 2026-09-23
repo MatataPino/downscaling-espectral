@@ -21,6 +21,7 @@ describen el mismo estado de mar.
 | 3 | `p3_kmedias.py` | K-medias sobre el clima operacional; estados de verificación | `seleccion_kmedias.npz`, `verificacion.npy` |
 | — | | *propagación de los estados seleccionados con SWAN* | |
 | 4 | `p4_reconstruccion.py` | interpoladores RBF y reconstrucción del registro | `reconstruccion_<punto>.npz` |
+| 5 | `p5_aplicar.py` | *(opcional)* los mismos interpoladores sobre un registro nuevo | `reconstruccion_<punto>_<etiqueta>.npz` |
 
 La propagación queda fuera del repositorio: cada aplicación tiene su malla, su
 física y su forma de correr SWAN. Los pasos 1 a 3 dicen qué estados propagar y
@@ -100,6 +101,32 @@ orden en que aparece en `sel`. El paso 4 busca esos dos archivos en la carpeta
 que la configuración asigna a cada conjunto; los casos que falten no entran al
 entrenamiento.
 
+## Ampliar la serie sin volver a correr SWAN
+
+Cuando el nodo suma años nuevos, no hace falta rehacer nada: los
+interpoladores ya aprendieron cómo se transforma un espectro entre el nodo y
+el punto de destino, y esa relación no cambia porque llegue más registro. El
+paso 5 los aplica al archivo que indica la sección `[aplicar]`, reutilizando la
+reducción de los pasos 1 a 3 y las propagaciones existentes:
+
+```
+python pasos/p5_aplicar.py --config config/mi_sitio.toml
+```
+
+Son unos 0,4 ms por espectro, de modo que un año de datos horarios se
+reconstruye en segundos.
+
+El registro nuevo debe ser del **mismo nodo** y tener la **misma grilla
+espectral** que el del entrenamiento; si no, el paso se detiene con un error,
+porque la base PCA y el espacio de entrada del interpolador son esas mismas
+celdas. No hay que volver a correr los pasos 1 a 3 sobre el archivo nuevo: eso
+construiría otra base, ajena a la que usaron los interpoladores.
+
+El paso avisa además cuántos estados caen fuera del rango que cubre el
+entrenamiento. Ahí el núcleo gaussiano extrapola, y extrapola mal: si un
+temporal supera la envolvente del clima con que se seleccionaron los casos,
+conviene propagarlo con SWAN y sumarlo al entrenamiento.
+
 ## Configuración
 
 | Sección | Qué contiene |
@@ -110,6 +137,7 @@ entrenamiento.
 | `[seleccion]` | casos de máxima disimilitud y K-medias, umbral del clima operacional |
 | `[swan]` | carpetas donde quedaron las salidas de SWAN y **puntos de salida** |
 | `[rbf]` | punto de destino, modos de la base de salida, malla de σ |
+| `[aplicar]` | opcional: el registro nuevo que reconstruye el paso 5 |
 
 Dos decisiones que dependen del sitio y conviene revisar:
 

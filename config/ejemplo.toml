@@ -90,3 +90,14 @@ sigma_min      = 0.002
 sigma_max      = 3.0
 n_sigma        = 60
 hs_operacional = 3.0
+
+# ---------------------------------------------------------------------
+# Opcional, solo para el paso 5: otro registro del MISMO nodo -una
+# ampliacion de la serie, por ejemplo- al que se aplican los mismos
+# interpoladores, sin volver a correr SWAN. Debe tener la misma grilla
+# espectral que el registro de [nodo].
+[aplicar]
+archivo  = "nodo/NODO_2025_2026.mat"
+grupo    = "NODO"
+# Sufijo del archivo de salida: reconstruccion_<punto>_<etiqueta>.npz
+etiqueta = "2025_2026"

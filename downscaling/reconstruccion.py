@@ -15,7 +15,8 @@
 import time
 import numpy as np
 from . import config as C
-from .espectros import leer_spc, leer_tab, dir_pico, abrir_nodo, nombre_salida
+from .espectros import (leer_spc, leer_tab, dir_pico, abrir_nodo, abrir_registro,
+                        nombre_salida)
 from .rbf import malla_sigma, rippa, resolver
 
 REDONDEO_SIGMA = 6        # decimales con que se agrupan los objetivos por sigma
@@ -38,7 +39,15 @@ def _carga(car, ids, punto, Spec, mu, sd, val, EOF):
 
 
 def reconstruir(cfg, sel_mda, sel_kmedias, sel_verif, reduccion, base_centrada,
-                reportar=print):
+                reportar=print, registro=None):
+    """Entrena con las propagaciones de SWAN y reconstruye un registro completo.
+
+    registro: None para reconstruir el registro del nodo de la configuracion;
+    un dict {archivo, grupo} para aplicar los mismos interpoladores a otro
+    registro del MISMO nodo -- una ampliacion de la serie, por ejemplo-. El
+    entrenamiento siempre usa el registro de [nodo], que es el que define la
+    reduccion y las propagaciones.
+    """
     t0 = time.time()
     rc = cfg['rbf']; pto = rc['punto']; raiz = C.raiz_swan(cfg)
     mu, sd, val, EOF, lo, hi = (reduccion[k] for k in ('mu', 'sd', 'val', 'EOF', 'lo', 'hi'))
@@ -81,6 +90,17 @@ def reconstruir(cfg, sel_mda, sel_kmedias, sel_verif, reduccion, base_centrada,
     sol_spc = {c: resolver(Xn, c, Yc[:, ix]) for c, ix in grp.items()}
 
     # 4. reconstruccion del registro
+    fe, Spec_ev, tiempo = None, Spec, np.array(g['time'])
+    if registro is not None:
+        fe, ge = abrir_registro(cfg, registro)
+        Spec_ev = ge['Spec']; tiempo = np.array(ge['time'])
+        if tuple(Spec_ev.shape[1:]) != tuple(Spec.shape[1:]):
+            raise ValueError('El registro nuevo tiene celdas %s y el del entrenamiento %s: '
+                             'los interpoladores solo se aplican a la misma grilla espectral'
+                             % (tuple(Spec_ev.shape[1:]), tuple(Spec.shape[1:])))
+        reportar("    registro nuevo: %d espectros de %s" % (Spec_ev.shape[0], registro['archivo']))
+    Nt = Spec_ev.shape[0]; fuera = 0
+
     frN = base_centrada['frec'].ravel(); diN = base_centrada['dirs'].ravel()
     W10 = np.gradient(frN)[None, None, :]*np.deg2rad(np.gradient(diN))[:, None][None, :, :]
     dfq = np.abs(np.gradient(fq)); ddg = np.abs(np.gradient(dd)); lf = np.log(fq); thr = np.deg2rad(dd)
@@ -88,9 +108,10 @@ def reconstruir(cfg, sel_mda, sel_kmedias, sel_verif, reduccion, base_centrada,
     par = np.empty((Nt, 3), np.float32); esp = np.empty((Nt, 3), np.float32)
     Yca = np.empty((Nt, ko), np.float32); Tm = np.empty(Nt, np.float32); HsN = np.empty(Nt)
     for i in range(0, Nt, CH):
-        raw = np.array(Spec[i:i+CH]); Xf = raw.reshape(len(raw), -1)
+        raw = np.array(Spec_ev[i:i+CH]); Xf = raw.reshape(len(raw), -1)
         HsN[i:i+CH] = 4*np.sqrt(np.clip((raw*W10).sum((1, 2)), 0, None))
         Q = nrm(((Xf[:, val]-mu[val])/sd[val])@EOF.T); Pq = np.c_[np.ones(len(Q)), Q]
+        fuera += int(((Q < 0) | (Q > 1)).any(1).sum())
         R2q = ((Q[:, None, :]-Xn[None, :, :])**2).sum(2)
         V = np.empty((len(Q), 4))
         for j, k in enumerate(["Hs", "Tp", "Dir_u", "Dir_v"]):
@@ -117,10 +138,13 @@ def reconstruir(cfg, sel_mda, sel_kmedias, sel_verif, reduccion, base_centrada,
         esp[i:i+CH, 2] = np.rad2deg(np.arctan2((w*np.sin(t_)).sum(1), (w*np.cos(t_)).sum(1))) % 360
         if (i//CH) % 5 == 0: reportar("      %d/%d  (%.1f min)" % (i, Nt, (time.time()-t0)/60))
     op = HsN < float(rc['hs_operacional'])
+    if fuera:
+        reportar("    AVISO: %d estados (%.2f %%) caen fuera del rango que cubre el"
+                 " entrenamiento; ahi el interpolador extrapola" % (fuera, 100.*fuera/Nt))
 
     # 5. verificacion
     ver = None
-    if sel_verif is not None and len(sel_verif):
+    if registro is None and sel_verif is not None and len(sel_verif):
         car = raiz/C.carpeta_casos(cfg, 'verificacion'); TT = []
         for k, idx in enumerate(sel_verif):
             base = car/nombre_salida(pto, k)
@@ -145,8 +169,10 @@ def reconstruir(cfg, sel_mda, sel_kmedias, sel_verif, reduccion, base_centrada,
                utm_n=pinfo.get('utm_n', np.nan), depth_m=pinfo.get('profundidad', np.nan),
                HsTpDir=esp, HsTpDir_rbf=par, Tm01=Tm, Hs_spec=esp[:, 0], Ycoef_all=Yca,
                EOF_out=E, Yspec_mean=Ym, frec=fq, dirs=dd, nf=nf, nd=nd,
-               time=np.array(g['time']), HsN10=HsN.astype(np.float32), operacional=op,
+               time=tiempo, HsN10=HsN.astype(np.float32), operacional=op,
+               fuera_de_rango=fuera,
                d=d, M=M, n_modos=ko, sigmas_par=str(sig_par), sigmas_spc=sig_spc)
     f.close()
+    if fe is not None: fe.close()
     reportar("    reconstruccion completa en %.1f min" % ((time.time()-t0)/60))
     return res, ver

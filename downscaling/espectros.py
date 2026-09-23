@@ -18,6 +18,13 @@ def abrir_nodo(cfg):
     return f, f[cfg['nodo']['grupo']]
 
 
+def abrir_registro(cfg, reg):
+    """Devuelve (archivo, grupo) de otro registro del mismo nodo: un dict con
+    'archivo' (relativo a rutas.datos) y 'grupo'."""
+    f = h5py.File(C.datos(cfg, reg['archivo']), 'r')
+    return f, f[reg['grupo']]
+
+
 def nombre_salida(punto, k):
     """Nombre, sin extension, con que se esperan las salidas de SWAN del caso k."""
     return "%s_%03d" % (punto.lower(), k)
